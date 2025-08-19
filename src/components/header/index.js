@@ -15,11 +15,6 @@ function Header({ user, profileInfo }) {
       show: true,
     },
     {
-      label: "Feed",
-      path: "/feed",
-      show: profileInfo,
-    },
-    {
       label: "Login",
       path: "/sign-in",
       show: !user,
@@ -45,8 +40,13 @@ function Header({ user, profileInfo }) {
       show: profileInfo?.role === "candidate",
     },
     {
-      label: "Dashboard",
+      label: "Jobs",
       path: "/dashboard/jobs",
+      show: profileInfo?.role === "recruiter",
+    },
+    {
+      label: "Candidates",
+      path: "/candidates",
       show: profileInfo?.role === "recruiter",
     },
     {
@@ -79,6 +79,7 @@ function Header({ user, profileInfo }) {
               {menuItems.map((menuItem) =>
                 menuItem.show ? (
                   <Link
+                    key={menuItem.path}
                     href={menuItem.path}
                     className="flex w-full items-center py-2 text-lg font-semibold"
                   >
@@ -97,6 +98,7 @@ function Header({ user, profileInfo }) {
           {menuItems.map((menuItem) =>
             menuItem.show ? (
               <Link
+                key={menuItem.path}
                 href={menuItem.path}
                 onClick={() => sessionStorage.removeItem("filterParams")}
                 className="group inline-flex h-9 w-max items-center rounded-md  px-4 py-2 text-sm font-medium"

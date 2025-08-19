@@ -149,8 +149,8 @@ function JobListing({
                             key={jobItem._id}
                             job={{
                               ...jobItem,
-                              applicants: jobApplications.filter(item => item.jobID === jobItem?._id),
-                              interviews: jobApplications.filter(item => item.jobID === jobItem?._id && item.status === 'Interviewing').length
+                              applicants: jobApplications.filter(item => item.jobID === jobItem._id),
+                              interviews: jobApplications.filter(item => item.jobID === jobItem._id && item.status === 'Interviewing').length
                             }}
                           />
                         )

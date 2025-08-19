@@ -1,13 +1,9 @@
-import { 
-  fetchJobsForRecruiterAction, 
-  fetchProfileAction,
-  fetchJobApplicationsForRecruiter 
-} from "@/actions";
-import RecruiterDashboard from "@/components/recruiter-dashboard";
+import { fetchJobApplicationsForRecruiter, fetchProfileAction } from "@/actions";
+import CandidateList from "@/components/candidate-list";
 import { currentUser } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 
-async function RecruiterDashboardPage() {
+async function CandidatesPage() {
   const user = await currentUser();
   
   if (!user) {
@@ -25,10 +21,17 @@ async function RecruiterDashboardPage() {
     redirect("/");
   }
   
-  const jobsList = await fetchJobsForRecruiterAction(user?.id);
   const jobApplications = await fetchJobApplicationsForRecruiter(user?.id);
 
-  return <RecruiterDashboard jobsList={jobsList} jobApplications={jobApplications} />;
+  return (
+    <CandidateList
+      jobApplications={jobApplications}
+      currentCandidateDetails={null}
+      showCurrentCandidateDetailsModal={false}
+      setCurrentCandidateDetails={() => {}}
+      setShowCurrentCandidateDetailsModal={() => {}}
+    />
+  );
 }
 
-export default RecruiterDashboardPage;
+export default CandidatesPage;

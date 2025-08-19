@@ -6,7 +6,7 @@ import JobDashboardCard from "../job-dashboard-card";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
-function RecruiterDashboard({ jobsList }) {
+function RecruiterDashboard({ jobsList, jobApplications = [] }) {
   const [filter, setFilter] = useState("all"); // all, active, closed
   
   // Filter jobs based on status
@@ -56,7 +56,14 @@ function RecruiterDashboard({ jobsList }) {
         {filteredJobs.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredJobs.map((job) => (
-              <JobDashboardCard key={job._id} job={job} />
+              <JobDashboardCard 
+                key={job._id} 
+                job={{
+                  ...job,
+                  applicants: jobApplications.filter(item => item.jobID === job._id),
+                  interviews: jobApplications.filter(item => item.jobID === job._id && item.status === 'Interviewing').length
+                }} 
+              />
             ))}
           </div>
         ) : (
