@@ -167,31 +167,43 @@ export async function createPriceIdAction(data) {
  *  - data.lineItems (fallback: array of { price, quantity } or { amount, currency, name } via price_data)
  */
 export async function createStripePaymentAction(data) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (!siteUrl) throw new Error("Missing NEXT_PUBLIC_SITE_URL.");
+  try {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    if (!siteUrl) throw new Error("Missing NEXT_PUBLIC_SITE_URL.");
+    
+    console.log("Creating Stripe payment with site URL:", siteUrl);
 
-  // Build line_items
-  let line_items = [];
-  if (data?.priceId) {
-    line_items = [{ price: data.priceId, quantity: 1 }];
-  } else if (Array.isArray(data?.lineItems) && data.lineItems.length > 0) {
-    line_items = data.lineItems; // assume already in Stripe shape
-  } else {
-    throw new Error("Provide either data.priceId or data.lineItems.");
+    // Build line_items
+    let line_items = [];
+    if (data?.priceId) {
+      line_items = [{ price: data.priceId, quantity: 1 }];
+    } else if (Array.isArray(data?.lineItems) && data.lineItems.length > 0) {
+      line_items = data.lineItems; // assume already in Stripe shape
+    } else {
+      throw new Error("Provide either data.priceId or data.lineItems.");
+    }
+    
+    console.log("Stripe checkout line items:", line_items);
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      line_items,
+      success_url: `${siteUrl}/membership?status=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${siteUrl}/membership?status=cancel`,
+      // Optional goodies:
+      // customer_email: data?.customerEmail,
+      allow_promotion_codes: true,
+      payment_method_types: ['card'],
+    });
+    
+    console.log("Stripe session created successfully:", session.id);
+
+    // Return URL so the client can redirect
+    return { success: true, id: session.id, url: session.url };
+  } catch (error) {
+    console.error("Stripe checkout session creation failed:", error);
+    throw new Error("Failed to create checkout: " + (error.message || "Please try again"));
   }
-
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    line_items,
-    success_url: `${siteUrl}/membership?status=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${siteUrl}/membership?status=cancel`,
-    // Optional goodies:
-    // customer_email: data?.customerEmail,
-    allow_promotion_codes: true,
-  });
-
-  // Return URL so the client can redirect
-  return { success: true, id: session.id, url: session.url };
 }
 
 // ---------- Feed ----------

@@ -14,37 +14,64 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
 const stripePromise = loadStripe(
-  "pk_test_51NMv6ZSC6E6fnyMeRIEb9oEXdGRCC9yrBTT4xWHgcjWOuFcqFiAHErvaS50K1hl5t5WJXVGfLLWxvb705IWJhA3300yCcrMnlM"
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 );
 
 function Membership({ profileInfo }) {
   const pathName = useSearchParams();
 
   async function handlePayment(getCurrentPlan) {
-    const stripe = await stripePromise;
-    const extractPriceId = await createPriceIdAction({
-      amount: Number(getCurrentPlan?.price),
-    });
-
-    if (extractPriceId) {
-      sessionStorage.setItem("currentPlan", JSON.stringify(getCurrentPlan));
-      const result = await createStripePaymentAction({
-        lineItems: [
-          {
-            price: extractPriceId?.id,
-            quantity: 1,
-          },
-        ],
+    try {
+      console.log("Starting payment process for plan:", getCurrentPlan);
+      
+      const stripe = await stripePromise;
+      if (!stripe) {
+        console.error("Failed to initialize Stripe");
+        alert("Payment system unavailable. Please try again later.");
+        return;
+      }
+      
+      const extractPriceId = await createPriceIdAction({
+        amount: Number(getCurrentPlan?.price),
       });
 
-      console.log(result);
+      console.log("Created price ID:", extractPriceId);
+      
+      if (extractPriceId && extractPriceId.id) {
+        sessionStorage.setItem("currentPlan", JSON.stringify(getCurrentPlan));
+        
+        const result = await createStripePaymentAction({
+          lineItems: [
+            {
+              price: extractPriceId.id,
+              quantity: 1,
+            },
+          ],
+        });
 
-      await stripe.redirectToCheckout({
-        sessionId: result?.id,
-      });
+        console.log("Checkout session created:", result);
+
+        if (result && result.id) {
+          const { error } = await stripe.redirectToCheckout({
+            sessionId: result.id,
+          });
+          
+          if (error) {
+            console.error("Stripe redirect error:", error);
+            alert("Payment failed: " + (error.message || "Please try again."));
+          }
+        } else {
+          console.error("Invalid checkout session result:", result);
+          alert("Couldn't create checkout session. Please try again.");
+        }
+      } else {
+        console.error("Failed to create price ID:", extractPriceId);
+        alert("Payment setup failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      alert("Payment process failed: " + (error.message || "Please try again."));
     }
-
-    console.log(extractPriceId);
   }
 
   async function updateProfile() {
