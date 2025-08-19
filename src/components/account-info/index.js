@@ -132,7 +132,14 @@ function AccountInfo({ profileInfo }) {
     
     if (profileInfo?.role === "recruiter") {
       console.log("Setting recruiter data");
-      setRecruiterFormData(profileInfo?.recruiterInfo);
+      const ri = profileInfo?.recruiterInfo || {};
+      setRecruiterFormData({
+        name: ri.name || "",
+        companyName: ri.companyName || "",
+        companyRole: ri.companyRole || "",
+        email: ri.email || profileInfo?.email || "",
+        phoneNumber: ri.phoneNumber || "",
+      });
     }
 
     if (profileInfo?.role === "candidate" && profileInfo?.candidateInfo) {
@@ -202,7 +209,13 @@ function AccountInfo({ profileInfo }) {
       
       return isValid;
     }
-    return true; // Recruiters don't have required fields
+    // Recruiter required fields: name, companyName, companyRole, email, phoneNumber
+    if (profileInfo?.role === "recruiter") {
+      const r = recruiterFormData || {};
+      const all = [r.name, r.companyName, r.companyRole, r.email, r.phoneNumber];
+      return all.every((v) => v && String(v).trim() !== "");
+    }
+    return true;
   }
 
   console.log(profileInfo, "candidateFormData UPDATED", candidateFormData);
@@ -301,7 +314,11 @@ function AccountInfo({ profileInfo }) {
             }
             handleFileChange={profileInfo?.role === "candidate" ? handleFileChange : undefined}
             buttonText="Update Profile"
-            isBtnDisabled={profileInfo?.role === "candidate" ? isUploading || !isFormValid() : false}
+            isBtnDisabled={
+              profileInfo?.role === "candidate"
+                ? isUploading || !isFormValid()
+                : !isFormValid()
+            }
           />
           <div className="mt-4 text-xs text-gray-500">* indicates a required field</div>
         </div>

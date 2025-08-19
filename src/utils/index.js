@@ -4,20 +4,37 @@ export const recruiterOnboardFormControls = [
   {
     label: "Name",
     name: "name",
-  placeholder: "Your name",
+    placeholder: "Your name",
     componentType: "input",
+    required: true,
   },
   {
     label: "Company Name",
     name: "companyName",
-  placeholder: "Your company name",
+    placeholder: "Your company name",
     componentType: "input",
+    required: true,
   },
   {
     label: "Company Role",
     name: "companyRole",
-  placeholder: "Your company role",
+    placeholder: "Your company role",
     componentType: "input",
+    required: true,
+  },
+  {
+    label: "Email",
+    name: "email",
+    placeholder: "Your work email",
+    componentType: "input",
+    required: true,
+  },
+  {
+    label: "Phone Number",
+    name: "phoneNumber",
+    placeholder: "Your phone number",
+    componentType: "input",
+    required: true,
   },
 ];
 
@@ -25,6 +42,8 @@ export const initialRecruiterFormData = {
   name: "",
   companyName: "",
   companyRole: "",
+  email: "",
+  phoneNumber: "",
 };
 
 export const candidateOnboardFormControls = [
