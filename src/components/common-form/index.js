@@ -83,13 +83,19 @@ function CommonForm({
   }
 
   return (
-    <form action={action}>
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      action();
+    }}>
       {formControls.map((control) => renderInputByComponentType(control))}
       <div className="mt-6 w-full">
         <Button
           type={btnType || "submit"}
           className="disabled:opacity-60 flex h-11 items-center justify-center px-5"
           disabled={isBtnDisabled}
+          onClick={() => {
+            console.log("Button clicked");
+          }}
         >
           {buttonText}
         </Button>

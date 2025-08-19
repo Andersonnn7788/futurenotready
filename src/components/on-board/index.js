@@ -52,7 +52,8 @@ function OnBoard() {
     }
   }
 
-  console.log(candidateFormData);
+  console.log("Current form data:", candidateFormData);
+  console.log("Form valid:", handleCandidateFormValid());
 
   useEffect(() => {
     if (file) handleUploadPdfToSupabase();
@@ -72,30 +73,41 @@ function OnBoard() {
   }
 
   function handleCandidateFormValid() {
-    return Object.keys(candidateFormData).every(
-      (key) => candidateFormData[key].trim() !== ""
+    // Required fields that must be filled
+    const requiredFields = ["name", "currentCompany", "currentJobLocation", "skills"];
+    
+    // Check if all required fields are filled
+    return requiredFields.every(
+      (key) => candidateFormData[key] && candidateFormData[key].trim() !== ""
     );
   }
 
   async function createProfile() {
-    const data =
-      currentTab === "candidate"
-        ? {
-            candidateInfo: candidateFormData,
-            role: "candidate",
-            isPremiumUser: false,
-            userId: user?.id,
-            email: user?.primaryEmailAddress?.emailAddress,
-          }
-        : {
-            recruiterInfo: recruiterFormData,
-            role: "recruiter",
-            isPremiumUser: false,
-            userId: user?.id,
-            email: user?.primaryEmailAddress?.emailAddress,
-          };
+    try {
+      console.log("Creating profile...");
+      const data =
+        currentTab === "candidate"
+          ? {
+              candidateInfo: candidateFormData,
+              role: "candidate",
+              isPremiumUser: false,
+              userId: user?.id,
+              email: user?.primaryEmailAddress?.emailAddress,
+            }
+          : {
+              recruiterInfo: recruiterFormData,
+              role: "recruiter",
+              isPremiumUser: false,
+              userId: user?.id,
+              email: user?.primaryEmailAddress?.emailAddress,
+            };
 
-    await createProfileAction(data, "/onboard");
+      console.log("Profile data:", data);
+      await createProfileAction(data, "/");
+      console.log("Profile created successfully!");
+    } catch (error) {
+      console.error("Error creating profile:", error);
+    }
   }
 
   console.log(candidateFormData);
@@ -122,7 +134,7 @@ function OnBoard() {
             formControls={candidateOnboardFormControls}
             buttonText={"Onboard as candidate"}
             handleFileChange={handleFileChange}
-            isBtnDisabled={!handleCandidateFormValid()}
+            isBtnDisabled={false} /* Remove validation temporarily to test button */
           />
         </TabsContent>
         <TabsContent value="recruiter">
