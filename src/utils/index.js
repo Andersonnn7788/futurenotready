@@ -129,6 +129,7 @@ export const initialCandidateFormData = {
 
 export const initialCandidateAccountFormData = {
   resume: "",
+  resumeOriginalName: "",
   name: "",
   email: "",
   phoneNumber: "",

@@ -47,15 +47,49 @@ function CommonForm({
         break;
 
       case "file":
+        // derive a nice display name from saved URL/path in formData
+        const rawVal = formData?.[getCurrentControl.name];
+        const deriveFileName = (val) => {
+          if (!val) return "";
+          try {
+            const u = new URL(val);
+            const last = u.pathname.split("/").pop() || "";
+            return decodeURIComponent(last);
+          } catch {
+            const base = String(val).split("?")[0];
+            const last = base.split("/").pop() || "";
+            return decodeURIComponent(last);
+          }
+        };
+        const savedFileName = (getCurrentControl.name === "resume" && formData?.resumeOriginalName)
+          ? formData.resumeOriginalName
+          : deriveFileName(rawVal);
+
         content = (
-          <Label
-            htmlFor={getCurrentControl.name}
-            className="flex bg-gray-100 items-center px-3 py-3 mx-auto mt-6 text-center border-2 border-dashed rounded-lg cursor-pointer"
-          >
-            <h2>
-              {getCurrentControl.label}
-              {getCurrentControl.required && <span className="text-red-500 ml-1">*</span>}
-            </h2>
+          <div className="mt-6">
+            <Label
+              htmlFor={getCurrentControl.name}
+              className="flex bg-gray-100 items-center justify-between gap-3 px-3 py-3 mx-auto text-center border-2 border-dashed rounded-lg cursor-pointer"
+            >
+              <div className="text-left">
+                <h2 className="font-medium">
+                  {getCurrentControl.label}
+                  {getCurrentControl.required && <span className="text-red-500 ml-1">*</span>}
+                </h2>
+              </div>
+              <div className="flex-1 text-left truncate text-gray-700">
+                {savedFileName ? (
+                  <span title={savedFileName} className="truncate inline-block max-w-full">
+                    {savedFileName}
+                  </span>
+                ) : (
+                  <span className="text-gray-500">No file chosen</span>
+                )}
+              </div>
+              <div>
+                <span className="inline-block bg-white border rounded px-3 py-1 text-sm">Choose File</span>
+              </div>
+            </Label>
             <Input
               onChange={handleFileChange}
               id={getCurrentControl.name}
@@ -63,8 +97,9 @@ function CommonForm({
               name={getCurrentControl.name}
               accept={getCurrentControl.accept || ".pdf,application/pdf"}
               required={getCurrentControl.required}
+              className="hidden"
             />
-          </Label>
+          </div>
         );
 
         break;

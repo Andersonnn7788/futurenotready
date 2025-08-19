@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import CommonForm from "../common-form";
 import { updateProfileAction } from "@/actions";
 import { createClient } from "@supabase/supabase-js";
+import { useToast } from "@/components/ui/use-toast";
 
 const supabaseClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ymsijpnegskkoiuerthi.supabase.co",
@@ -20,6 +21,7 @@ const supabaseClient = createClient(
 const SUPABASE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_BUCKET || "job-board-public";
 
 function AccountInfo({ profileInfo }) {
+  const { toast } = useToast();
   const [candidateFormData, setCandidateFormData] = useState(() => {
     // Initialize with proper data if profileInfo is available during initialization
     if (profileInfo?.role === "candidate" && profileInfo?.candidateInfo) {
@@ -64,7 +66,9 @@ function AccountInfo({ profileInfo }) {
       alert("File is too large. Max 5MB.");
       return;
     }
-    setFile(selected);
+  // Save original name for UI display
+  setCandidateFormData((prev) => ({ ...prev, resumeOriginalName: selected.name }));
+  setFile(selected);
   }
 
   async function handleUploadPdfToSupabase() {
@@ -98,11 +102,22 @@ function AccountInfo({ profileInfo }) {
         resume: publicUrl,
       }));
     } catch (e) {
-      // Surface more details to help debugging
-      console.error("Resume upload failed:", e);
-      const message = e?.message || e?.error?.message || e?.error_description || "Unknown error";
-      const status = e?.status || e?.statusCode || "";
-      alert(`Failed to upload resume. ${status ? `(Status ${status}) ` : ""}${message}`);
+      console.warn("Direct upload failed; trying server route /api/upload-resume", e);
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        if (profileInfo?.userId) form.append("userId", profileInfo.userId);
+        const resp = await fetch("/api/upload-resume", { method: "POST", body: form });
+        const json = await resp.json();
+        if (!resp.ok) {
+          throw new Error(json?.error || `Server upload failed with ${resp.status}`);
+        }
+        setCandidateFormData((prev) => ({ ...prev, resume: json.publicUrl }));
+      } catch (serverErr) {
+        console.error("Resume upload failed (both client and server):", serverErr);
+        const message = serverErr?.message || "Unknown error";
+        alert(`Failed to upload resume. ${message}`);
+      }
     } finally {
       setIsUploading(false);
     }
@@ -142,6 +157,16 @@ function AccountInfo({ profileInfo }) {
         linkedinProfile: candidateInfo.linkedinProfile || "",
         githubProfile: candidateInfo.githubProfile || "",
       };
+      // derive a friendly name from existing URL/path for UI
+      if (formData.resume) {
+        try {
+          const url = new URL(formData.resume);
+          formData.resumeOriginalName = decodeURIComponent(url.pathname.split("/").pop() || "");
+        } catch {
+          const base = String(formData.resume).split("?")[0];
+          formData.resumeOriginalName = decodeURIComponent(base.split("/").pop() || "");
+        }
+      }
       
       console.log("New formData being set:", formData);
       setCandidateFormData(formData);
@@ -188,38 +213,43 @@ function AccountInfo({ profileInfo }) {
   alert("Please fill in all required fields. Make sure you have Name, Email, Phone Number, and a PDF resume if prompted.");
       return;
     }
-
-    await updateProfileAction(
-      profileInfo?.role === "candidate"
-        ? {
-            _id: profileInfo?._id,
-            userId: profileInfo?.userId,
-            email: profileInfo?.email,
-            role: profileInfo?.role,
-            isPremiumUser: profileInfo?.isPremiumUser,
-            memberShipType: profileInfo?.memberShipType,
-            memberShipStartDate: profileInfo?.memberShipStartDate,
-            memberShipEndDate: profileInfo?.memberShipEndDate,
-            candidateInfo: {
-              ...candidateFormData,
-              resume: candidateFormData.resume || profileInfo?.candidateInfo?.resume,
+    try {
+      await updateProfileAction(
+        profileInfo?.role === "candidate"
+          ? {
+              _id: profileInfo?._id,
+              userId: profileInfo?.userId,
+              email: profileInfo?.email,
+              role: profileInfo?.role,
+              isPremiumUser: profileInfo?.isPremiumUser,
+              memberShipType: profileInfo?.memberShipType,
+              memberShipStartDate: profileInfo?.memberShipStartDate,
+              memberShipEndDate: profileInfo?.memberShipEndDate,
+              candidateInfo: {
+                ...candidateFormData,
+                resume: candidateFormData.resume || profileInfo?.candidateInfo?.resume,
+              },
+            }
+          : {
+              _id: profileInfo?._id,
+              userId: profileInfo?.userId,
+              email: profileInfo?.email,
+              role: profileInfo?.role,
+              isPremiumUser: profileInfo?.isPremiumUser,
+              memberShipType: profileInfo?.memberShipType,
+              memberShipStartDate: profileInfo?.memberShipStartDate,
+              memberShipEndDate: profileInfo?.memberShipEndDate,
+              recruiterInfo: {
+                ...recruiterFormData,
+              },
             },
-          }
-        : {
-            _id: profileInfo?._id,
-            userId: profileInfo?.userId,
-            email: profileInfo?.email,
-            role: profileInfo?.role,
-            isPremiumUser: profileInfo?.isPremiumUser,
-            memberShipType: profileInfo?.memberShipType,
-            memberShipStartDate: profileInfo?.memberShipStartDate,
-            memberShipEndDate: profileInfo?.memberShipEndDate,
-            recruiterInfo: {
-              ...recruiterFormData,
-            },
-          },
-      "/account"
-    );
+        "/account"
+      );
+      toast({ title: "Profile updated successfully" });
+    } catch (e) {
+      console.error("Update profile failed:", e);
+      toast({ title: "Failed to update profile", description: e?.message || "Please try again" });
+    }
   }
 
   return (
@@ -273,26 +303,7 @@ function AccountInfo({ profileInfo }) {
             buttonText="Update Profile"
             isBtnDisabled={profileInfo?.role === "candidate" ? isUploading || !isFormValid() : false}
           />
-          {profileInfo?.role === "candidate" && (
-            <div className="mt-4 text-sm text-gray-600">
-              <p>* Required fields: Name, Email, Phone Number</p>
-              <p className="text-xs text-gray-500">Resume upload is optional for profile updates</p>
-              {profileInfo?.candidateInfo?.resume && (
-                <p className="text-green-600">✓ Resume uploaded: {profileInfo.candidateInfo.resume}</p>
-              )}
-              <div className="mt-2 text-xs">
-                <p>Form validation: {isFormValid() ? "✓ Valid" : "✗ Missing required fields"}</p>
-                <div className="mt-2 bg-gray-100 p-2 rounded text-xs">
-                  <p><strong>Debug Info:</strong></p>
-                  <p>Name: "{candidateFormData.name}" (length: {candidateFormData.name?.length || 0})</p>
-                  <p>Email: "{candidateFormData.email}" (length: {candidateFormData.email?.length || 0})</p>
-                  <p>Phone: "{candidateFormData.phoneNumber}" (length: {candidateFormData.phoneNumber?.length || 0})</p>
-                  <p>Resume: "{candidateFormData.resume || profileInfo?.candidateInfo?.resume || ""}"</p>
-                  {isUploading && <p className="text-blue-600">Uploading resume...</p>}
-                </div>
-              </div>
-            </div>
-          )}
+          <div className="mt-4 text-xs text-gray-500">* indicates a required field</div>
         </div>
       </div>
     </div>
