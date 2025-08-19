@@ -22,7 +22,7 @@ function RecruiterDashboard({ jobsList }) {
           Manage Job Listings
         </h1>
         <div className="flex items-center">
-          <Link href="/jobs/post-new-job">
+          <Link href="/dashboard/jobs/post-new-job">
             <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Post New Job
@@ -67,7 +67,7 @@ function RecruiterDashboard({ jobsList }) {
                 ? "You haven't posted any jobs yet." 
                 : `You don't have any ${filter} jobs.`}
             </p>
-            <Link href="/jobs/post-new-job">
+            <Link href="/dashboard/jobs/post-new-job">
               <Button>Post Your First Job</Button>
             </Link>
           </div>
