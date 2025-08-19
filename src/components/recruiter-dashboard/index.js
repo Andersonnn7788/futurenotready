@@ -18,7 +18,7 @@ function RecruiterDashboard({ jobsList }) {
   return (
     <div className="mx-auto max-w-7xl">
       <div className="flex items-baseline justify-between border-b pb-6 pt-24">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
+        <h1 className="text-4xl font-bold tracking-tight text-gray-900">
           Manage Job Listings
         </h1>
         <div className="flex items-center">

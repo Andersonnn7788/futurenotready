@@ -22,7 +22,7 @@ function RecruiterJobCard({ jobItem, jobApplications }) {
         footerContent={
           <Button
             onClick={() => setShowApplicantsDrawer(true)}
-            className=" dark:bg-[#fffa27] disabled:opacity-55 flex h-11 items-center justify-center px-5"
+            className="disabled:opacity-55 flex h-11 items-center justify-center px-5"
             disabled={
               jobApplications.filter((item) => item.jobID === jobItem?._id)
                 .length === 0

@@ -76,7 +76,7 @@ function JobPostingForm({ user, profileInfo }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <h2 className="text-2xl font-medium text-gray-900 dark:text-white mb-6">Update your job posting information</h2>
+      <h2 className="text-2xl font-medium text-gray-900 mb-6">Update your job posting information</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">

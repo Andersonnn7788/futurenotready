@@ -34,8 +34,8 @@ function Companies({ jobsList }) {
 
   return (
     <div className="mx-auto max-w-7xl">
-      <div className="flex items-baseline dark:border-white justify-between border-b pb-6 pt-24">
-        <h1 className="text-4xl dark:text-white font-bold tracking-tight text-gray-900">
+      <div className="flex items-baseline justify-between border-b pb-6 pt-24">
+        <h1 className="text-4xl font-bold tracking-tight text-gray-900">
           Browse Companies
         </h1>
       </div>
@@ -55,7 +55,7 @@ function Companies({ jobsList }) {
                           onClick={() =>
                             handleFilterJobsByCompanyName(companyName)
                           }
-                          className="dark:bg-[#fffa27] h-11 flex items-center justify-center px-5"
+                          className="h-11 flex items-center justify-center px-5"
                         >
                           See Jobs
                         </Button>
