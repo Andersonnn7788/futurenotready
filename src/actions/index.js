@@ -7,7 +7,6 @@ import Job from "@/models/job";
 import Profile from "@/models/profile";
 import { revalidatePath } from "next/cache";
 import { stripe } from "@/lib/stripe"; // <-- create this helper (shown below)
-export const runtime = "nodejs"; // ensure Node runtime (Stripe SDK needs it)
 
 // ---------- Profiles ----------
 export async function createProfileAction(formData, pathToRevalidate) {
