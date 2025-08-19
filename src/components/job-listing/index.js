@@ -4,6 +4,7 @@ import { filterMenuDataArray, formUrlQuery } from "@/utils";
 import CandidateJobCard from "../candidate-job-card";
 import PostNewJob from "../post-new-job";
 import RecruiterJobCard from "../recruiter-job-card";
+import JobDashboardCard from "../job-dashboard-card";
 import {
   Menubar,
   MenubarContent,
@@ -82,6 +83,12 @@ function JobListing({
               : "Jobs Dashboard"}
           </h1>
           <div className="flex items-center">
+            {profileInfo?.role === "recruiter" && (
+              <div className="mr-4">
+                <span className="text-sm text-gray-500 mr-2">Total Jobs:</span>
+                <span className="font-medium">{jobList?.length || 0}</span>
+              </div>
+            )}
             {profileInfo?.role === "candidate" ? (
               <Menubar>
                 {filterMenus.map((filterMenu) => (
@@ -124,23 +131,27 @@ function JobListing({
           </div>
         </div>
         <div className="pt-6 pb-24">
-          <div className="grid grid-cols-1 gap-x-8 gap-y-10 lg:grid-cols-3">
-            <div className="lg:col-span-4">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-10">
+            <div className="w-full">
               <div className="container mx-auto p-0 space-y-8">
-                <div className="grid grid-cols-1 gap-x-4 gap-y-8 md:grid-cols-2 lg:grid-cols-3">
+                <div className={`grid grid-cols-1 gap-x-4 gap-y-8 ${profileInfo?.role === "candidate" ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2 lg:grid-cols-3"}`}>
                   {jobList && jobList.length > 0
                     ? jobList.map((jobItem) =>
                         profileInfo?.role === "candidate" ? (
                           <CandidateJobCard
+                            key={jobItem._id}
                             profileInfo={profileInfo}
                             jobItem={jobItem}
                             jobApplications={jobApplications}
                           />
                         ) : (
-                          <RecruiterJobCard
-                            profileInfo={profileInfo}
-                            jobItem={jobItem}
-                            jobApplications={jobApplications}
+                          <JobDashboardCard 
+                            key={jobItem._id}
+                            job={{
+                              ...jobItem,
+                              applicants: jobApplications.filter(item => item.jobID === jobItem?._id),
+                              interviews: jobApplications.filter(item => item.jobID === jobItem?._id && item.status === 'Interviewing').length
+                            }}
                           />
                         )
                       )

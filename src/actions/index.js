@@ -8,6 +8,51 @@ import Profile from "@/models/profile";
 import { revalidatePath } from "next/cache";
 import { stripe } from "@/lib/stripe"; // <-- create this helper (shown below)
 
+// ---------- Job Management ----------
+export async function deleteJob(jobId) {
+  try {
+    await connectToDB();
+    const deletedJob = await Job.findByIdAndDelete(jobId);
+    
+    if (!deletedJob) {
+      return { success: false, message: "Job not found" };
+    }
+
+    // Revalidate the companies page to show updated job listings
+    revalidatePath("/companies");
+    revalidatePath("/dashboard/jobs");
+    
+    return { success: true, message: "Job deleted successfully" };
+  } catch (error) {
+    console.error("Error deleting job:", error);
+    return { success: false, message: "Failed to delete job" };
+  }
+}
+
+export async function updateJobStatus(jobId, status) {
+  try {
+    await connectToDB();
+    const updatedJob = await Job.findByIdAndUpdate(
+      jobId,
+      { status, updatedAt: new Date() },
+      { new: true }
+    );
+    
+    if (!updatedJob) {
+      return { success: false, message: "Job not found" };
+    }
+
+    // Revalidate the necessary pages
+    revalidatePath("/companies");
+    revalidatePath("/dashboard/jobs");
+    
+    return { success: true, message: `Job status updated to ${status}`, job: updatedJob };
+  } catch (error) {
+    console.error("Error updating job status:", error);
+    return { success: false, message: "Failed to update job status" };
+  }
+}
+
 // ---------- Profiles ----------
 export async function createProfileAction(formData, pathToRevalidate) {
   await connectToDB();

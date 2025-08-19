@@ -44,7 +44,12 @@ function Header({ user, profileInfo }) {
     {
       label: "Jobs",
       path: "/jobs",
-      show: profileInfo,
+      show: profileInfo?.role === "candidate",
+    },
+    {
+      label: "Dashboard",
+      path: "/dashboard/jobs",
+      show: profileInfo?.role === "recruiter",
     },
     {
       label: "Membership",

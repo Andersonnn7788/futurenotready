@@ -9,6 +9,23 @@ const JobSchema = new mongoose.Schema({
   description: String,
   skills: String,
   recruiterId: String,
+  status: {
+    type: String,
+    enum: ['active', 'closed'],
+    default: 'active'
+  },
+  postedDate: {
+    type: Date,
+    default: Date.now
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  },
   applicants: [
     {
       name: String,

@@ -42,6 +42,8 @@ function PostNewJob({ profileInfo, user, jobList }) {
       {
         ...jobFormData,
         recruiterId: user?.id,
+        status: 'active',
+        postedDate: new Date(),
         applicants: [],
       },
       "/jobs"
