@@ -9,7 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "TalentZ - AI-Powered Talent Acquisition",
+  title: "TalentMatch - AI-Powered Talent Acquisition",
   description: "Hire faster. Onboard smarter. One unified workflow from resume to day one with AI-powered matching, automated scheduling, and seamless onboarding.",
 };
 
