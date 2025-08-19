@@ -10,6 +10,7 @@ import {
 import { createClient } from "@supabase/supabase-js";
 import { MapPin, Briefcase, Mail, Calendar, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 
 const supabaseClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ymsijpnegskkoiuerthi.supabase.co",
@@ -23,6 +24,7 @@ function CandidateList({
   showCurrentCandidateDetailsModal,
   setShowCurrentCandidateDetailsModal,
 }) {
+  const router = useRouter();
   const [profilesByUserId, setProfilesByUserId] = useState({});
 
   // Fetch candidate profiles for all unique candidateUserIDs
@@ -222,17 +224,7 @@ function CandidateList({
                   <Button
                     className="h-9 text-sm flex items-center gap-2 justify-center"
                     disabled={!resumeUrl}
-                    onClick={() => {
-                      if (resumeUrl) {
-                        const a = document.createElement("a");
-                        a.href = resumeUrl;
-                        a.target = "_blank";
-                        a.rel = "noopener noreferrer";
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                      }
-                    }}
+                    onClick={() => router.push(`/candidates/analyze/${item?.candidateUserID}`)}
                   >
                     <FileText size={16} /> Analyze Resume
                   </Button>
