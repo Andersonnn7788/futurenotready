@@ -1,5 +1,5 @@
 import { fetchJobApplicationsForRecruiter, fetchProfileAction } from "@/actions";
-import CandidateList from "@/components/candidate-list";
+import CandidatesPageClient from "./CandidatesPageClient.js";
 import { currentUser } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 
@@ -23,15 +23,7 @@ async function CandidatesPage() {
   
   const jobApplications = await fetchJobApplicationsForRecruiter(user?.id);
 
-  return (
-    <CandidateList
-      jobApplications={jobApplications}
-      currentCandidateDetails={null}
-      showCurrentCandidateDetailsModal={false}
-      setCurrentCandidateDetails={() => {}}
-      setShowCurrentCandidateDetailsModal={() => {}}
-    />
-  );
+  return <CandidatesPageClient jobApplications={jobApplications} />;
 }
 
 export default CandidatesPage;

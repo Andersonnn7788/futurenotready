@@ -74,12 +74,12 @@ function OnBoard() {
 
   function handleCandidateFormValid() {
     // Required fields that must be filled
-    const requiredFields = ["name", "currentCompany", "currentJobLocation", "skills"];
+    const requiredFields = ["name", "email", "phoneNumber"];
     
-    // Check if all required fields are filled
+    // Check if all required fields are filled and resume is uploaded
     return requiredFields.every(
       (key) => candidateFormData[key] && candidateFormData[key].trim() !== ""
-    );
+    ) && candidateFormData.resume; // Resume is also required
   }
 
   async function createProfile() {
@@ -134,7 +134,7 @@ function OnBoard() {
             formControls={candidateOnboardFormControls}
             buttonText={"Onboard as candidate"}
             handleFileChange={handleFileChange}
-            isBtnDisabled={false} /* Remove validation temporarily to test button */
+            isBtnDisabled={!handleCandidateFormValid()}
           />
         </TabsContent>
         <TabsContent value="recruiter">

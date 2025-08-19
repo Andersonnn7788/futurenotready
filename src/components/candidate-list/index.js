@@ -70,25 +70,38 @@ function CandidateList({
       <div className="grid grid-cols-1 gap-3 p-10 md:grid-cols-2 lg:grid-cols-3">
         {jobApplications && jobApplications.length > 0
           ? jobApplications.map((jobApplicantItem) => (
-              <div className="bg-white shadow-lg w-full max-w-sm rounded-lg overflow-hidden mx-auto mt-4">
-                <div className="px-4 my-6 flex justify-between items-center">
-                  <h3 className="text-lg font-bold">
-                    {jobApplicantItem?.name}
-                  </h3>
+              <div key={jobApplicantItem._id} className="bg-white shadow-lg w-full max-w-sm rounded-lg overflow-hidden mx-auto mt-4">
+                <div className="px-4 my-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold">
+                      {jobApplicantItem?.name || jobApplicantItem?.email || 'Candidate'}
+                    </h3>
+                    <p className="text-sm text-gray-600">{jobApplicantItem?.email}</p>
+                    <p className="text-sm text-gray-500">Applied: {jobApplicantItem?.jobAppliedDate}</p>
+                    <p className="text-sm">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {jobApplicantItem?.status[jobApplicantItem?.status.length - 1]}
+                      </span>
+                    </p>
+                  </div>
                   <Button
                     onClick={() =>
                       handleFetchCandidateDetails(
                         jobApplicantItem?.candidateUserID
                       )
                     }
-                    className="flex h-11 items-center justify-center px-5"
+                    className="w-full flex h-11 items-center justify-center px-5"
                   >
                     View Profile
                   </Button>
                 </div>
               </div>
             ))
-          : null}
+          : (
+            <div className="col-span-full text-center py-8">
+              <p className="text-gray-500">No candidates have applied yet.</p>
+            </div>
+          )}
       </div>
       <Dialog
         open={showCurrentCandidateDetailsModal}
@@ -114,8 +127,7 @@ function CandidateList({
               {currentCandidateDetails?.candidateInfo?.totalExperience} Years
             </p>
             <p className="">
-              Salary: {currentCandidateDetails?.candidateInfo?.currentSalary}{" "}
-              LPA
+              Expected Salary: MYR {currentCandidateDetails?.candidateInfo?.currentSalary}
             </p>
             <p className="">
               Notice Period:{" "}
@@ -138,8 +150,8 @@ function CandidateList({
             <div className="flex flex-wrap gap-4 mt-6">
               {currentCandidateDetails?.candidateInfo?.skills
                 .split(",")
-                .map((skillItem) => (
-                  <div className="w-[100px] flex justify-center items-center h-[35px] bg-black rounded-[4px]">
+                .map((skillItem, index) => (
+                  <div key={index} className="w-[100px] flex justify-center items-center h-[35px] bg-black rounded-[4px]">
                     <h2 className="text-[13px] font-medium text-white">
                       {skillItem}
                     </h2>
