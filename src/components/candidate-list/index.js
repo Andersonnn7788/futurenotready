@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogFooter } from "../ui/dialog";
 import {
@@ -8,6 +8,8 @@ import {
   updateJobApplicationAction,
 } from "@/actions";
 import { createClient } from "@supabase/supabase-js";
+import { MapPin, Briefcase, Mail, Calendar, FileText } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const supabaseClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ymsijpnegskkoiuerthi.supabase.co",
@@ -21,6 +23,66 @@ function CandidateList({
   showCurrentCandidateDetailsModal,
   setShowCurrentCandidateDetailsModal,
 }) {
+  const [profilesByUserId, setProfilesByUserId] = useState({});
+
+  // Fetch candidate profiles for all unique candidateUserIDs
+  useEffect(() => {
+    const ids = Array.from(
+      new Set((jobApplications || []).map((j) => j?.candidateUserID).filter(Boolean))
+    );
+    let cancelled = false;
+    async function run() {
+      const entries = await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const p = await getCandidateDetailsByIDAction(id);
+            return [id, p];
+          } catch (e) {
+            console.error("Failed to fetch candidate profile:", id, e);
+            return [id, null];
+          }
+        })
+      );
+      if (!cancelled) {
+        const map = Object.fromEntries(entries);
+        setProfilesByUserId(map);
+      }
+    }
+    if (ids.length > 0) run();
+    return () => {
+      cancelled = true;
+    };
+  }, [jobApplications]);
+
+  const applicants = useMemo(() => jobApplications || [], [jobApplications]);
+  const uniqueApplicants = useMemo(() => {
+    const map = new Map();
+    for (const item of applicants) {
+      const id = item?.candidateUserID;
+      if (!id) continue;
+      if (!map.has(id)) map.set(id, item);
+    }
+    return Array.from(map.values());
+  }, [applicants]);
+
+  function getInitials(name = "") {
+    const parts = String(name).trim().split(/\s+/).slice(0, 2);
+    return parts.map((p) => p[0]?.toUpperCase() || "").join("") || "?";
+  }
+
+  function getResumePublicUrlFromDetails(details) {
+    const resume = details?.candidateInfo?.resume;
+    if (!resume) return null;
+    if (typeof resume === "string" && /^https?:\/\//i.test(resume)) return resume;
+    try {
+      const { data } = supabaseClient.storage
+        .from(process.env.NEXT_PUBLIC_SUPABASE_BUCKET || "job-board-public")
+        .getPublicUrl(resume);
+      return data?.publicUrl || null;
+    } catch {
+      return null;
+    }
+  }
   async function handleFetchCandidateDetails(getCurrentCandidateId) {
     const data = await getCandidateDetailsByIDAction(getCurrentCandidateId);
 
@@ -31,16 +93,37 @@ function CandidateList({
   }
 
   console.log(currentCandidateDetails);
+  function getResumePublicUrl() {
+    const resume = currentCandidateDetails?.candidateInfo?.resume;
+    if (!resume) return null;
+
+    // If resume is already a full URL, return it directly
+    if (typeof resume === "string" && /^https?:\/\//i.test(resume)) {
+      return resume;
+    }
+
+    // Otherwise treat it as a storage path and request a public URL
+    try {
+      const { data } = supabaseClient.storage
+        .from(process.env.NEXT_PUBLIC_SUPABASE_BUCKET || "job-board-public")
+        .getPublicUrl(resume);
+      return data?.publicUrl || null;
+    } catch (e) {
+      console.error("Failed to derive public URL for resume:", e);
+      return null;
+    }
+  }
 
   function handlePreviewResume() {
-    const { data } = supabaseClient.storage
-      .from(process.env.NEXT_PUBLIC_SUPABASE_BUCKET || "job-board-public")
-      .getPublicUrl(currentCandidateDetails?.candidateInfo?.resume);
-
+    const publicUrl = getResumePublicUrl();
+    if (!publicUrl) {
+      alert("No resume available for this candidate.");
+      return;
+    }
     const a = document.createElement("a");
-    a.href = data?.publicUrl;
-    a.setAttribute("download", "Resume.pdf");
+    a.href = publicUrl;
     a.setAttribute("target", "_blank");
+    a.setAttribute("rel", "noopener noreferrer");
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -67,41 +150,108 @@ function CandidateList({
 
   return (
     <Fragment>
-      <div className="grid grid-cols-1 gap-3 p-10 md:grid-cols-2 lg:grid-cols-3">
-        {jobApplications && jobApplications.length > 0
-          ? jobApplications.map((jobApplicantItem) => (
-              <div key={jobApplicantItem._id} className="bg-white shadow-lg w-full max-w-sm rounded-lg overflow-hidden mx-auto mt-4">
-                <div className="px-4 my-6">
-                  <div className="mb-4">
-                    <h3 className="text-lg font-bold">
-                      {jobApplicantItem?.name || jobApplicantItem?.email || 'Candidate'}
-                    </h3>
-                    <p className="text-sm text-gray-600">{jobApplicantItem?.email}</p>
-                    <p className="text-sm text-gray-500">Applied: {jobApplicantItem?.jobAppliedDate}</p>
-                    <p className="text-sm">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {jobApplicantItem?.status[jobApplicantItem?.status.length - 1]}
-                      </span>
-                    </p>
+      <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 lg:grid-cols-3">
+        {uniqueApplicants && uniqueApplicants.length > 0 ? (
+          uniqueApplicants.map((item) => {
+            const profile = profilesByUserId[item?.candidateUserID];
+            const c = profile?.candidateInfo || {};
+            const name = c.name || item?.name || "Candidate";
+            const email = c.email || item?.email || "";
+            const location = c.preferedJobLocation || "";
+            const expRaw = String(c.totalExperience || "").trim();
+            const expYears = expRaw && expRaw !== "-" ? `${expRaw}y exp` : "";
+            const skills = (c.skills || "").split(",").map((s) => s.trim()).filter(Boolean);
+            const topSkills = skills.slice(0, 3);
+            const moreCount = Math.max(0, skills.length - topSkills.length);
+            const resumeUrl = getResumePublicUrlFromDetails(profile);
+
+            return (
+              <div key={item._id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-semibold">
+                      {getInitials(name)}
+                    </div>
+                    <div>
+                      <div className="text-base font-semibold text-gray-900">{name}</div>
+                      <div className="text-xs text-gray-500">{email}</div>
+                    </div>
                   </div>
+                </div>
+
+                <div className="mt-3 flex items-center gap-3 text-gray-600 text-sm">
+                  {location && (
+                    <div className="flex items-center gap-1"><MapPin size={16} />{location}</div>
+                  )}
+                  {expYears && (
+                    <div className="flex items-center gap-1"><Briefcase size={16} />{expYears}</div>
+                  )}
+                </div>
+
+                {skills.length > 0 && (
+                  <div className="mt-4">
+                    <div className="text-[11px] uppercase text-gray-500 font-medium mb-2">Top Skills</div>
+                    <div className="flex flex-wrap gap-2">
+                      {topSkills.map((s, idx) => (
+                        <span key={idx} className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 border border-gray-200">{s}</span>
+                      ))}
+                      {moreCount > 0 && (
+                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 border border-gray-200">+{moreCount}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
                   <Button
-                    onClick={() =>
-                      handleFetchCandidateDetails(
-                        jobApplicantItem?.candidateUserID
-                      )
-                    }
-                    className="w-full flex h-11 items-center justify-center px-5"
+                    variant="outline"
+                    className="h-9 text-sm flex items-center gap-2 justify-center"
+                    onClick={() => console.log("Message", item?.candidateUserID)}
                   >
-                    View Profile
+                    <Mail size={16} /> Message
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-9 text-sm flex items-center gap-2 justify-center"
+                    onClick={() => console.log("Schedule", item?.candidateUserID)}
+                  >
+                    <Calendar size={16} /> Schedule
+                  </Button>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <Button
+                    className="h-9 text-sm flex items-center gap-2 justify-center"
+                    disabled={!resumeUrl}
+                    onClick={() => {
+                      if (resumeUrl) {
+                        const a = document.createElement("a");
+                        a.href = resumeUrl;
+                        a.target = "_blank";
+                        a.rel = "noopener noreferrer";
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                      }
+                    }}
+                  >
+                    <FileText size={16} /> Analyze Resume
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-9 text-sm flex items-center gap-2 justify-center"
+                    onClick={() => handleFetchCandidateDetails(item?.candidateUserID)}
+                  >
+                    View Details
                   </Button>
                 </div>
               </div>
-            ))
-          : (
-            <div className="col-span-full text-center py-8">
-              <p className="text-gray-500">No candidates have applied yet.</p>
-            </div>
-          )}
+            );
+          })
+        ) : (
+          <div className="col-span-full text-center py-8">
+            <p className="text-gray-500">No candidates have applied yet.</p>
+          </div>
+        )}
       </div>
       <Dialog
         open={showCurrentCandidateDetailsModal}
@@ -111,120 +261,79 @@ function CandidateList({
         }}
       >
         <DialogContent>
-          <div>
-            <h1 className="text-2xl font-bold text-black">
-              {currentCandidateDetails?.candidateInfo?.name},{" "}
-              {currentCandidateDetails?.email}
-            </h1>
-            <p className="text-xl font-medium text-black">
-              {currentCandidateDetails?.candidateInfo?.currentCompany}
-            </p>
-            <p className="text-sm font-normal text-black">
-              {currentCandidateDetails?.candidateInfo?.currentJobLocation}
-            </p>
-            <p className="">
-              Total Experience:
-              {currentCandidateDetails?.candidateInfo?.totalExperience} Years
-            </p>
-            <p className="">
-              Expected Salary: MYR {currentCandidateDetails?.candidateInfo?.currentSalary}
-            </p>
-            <p className="">
-              Notice Period:{" "}
-              {currentCandidateDetails?.candidateInfo?.noticePeriod} Days
-            </p>
-            <div className="flex items-center gap-4 mt-6">
-              <h1 className="">Previous Companies</h1>
-              <div className="flex flex-wrap items-center gap-4 mt-6">
-                {currentCandidateDetails?.candidateInfo?.previousCompanies
-                  .split(",")
-                  .map((skillItem) => (
-                    <div className="w-[100px] flex justify-center items-center h-[35px] bg-black rounded-[4px]">
-                      <h2 className="text-[13px] font-medium text-white">
-                        {skillItem}
-                      </h2>
-                    </div>
-                  ))}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-4 mt-6">
-              {currentCandidateDetails?.candidateInfo?.skills
-                .split(",")
-                .map((skillItem, index) => (
-                  <div key={index} className="w-[100px] flex justify-center items-center h-[35px] bg-black rounded-[4px]">
-                    <h2 className="text-[13px] font-medium text-white">
-                      {skillItem}
-                    </h2>
+          <Card className="w-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">
+                {currentCandidateDetails?.candidateInfo?.name || "N/A"}
+              </CardTitle>
+              <p className="text-sm text-gray-500">
+                Email: {currentCandidateDetails?.email || "N/A"}
+              </p>
+              <p className="text-sm text-gray-500">
+                Phone: {currentCandidateDetails?.candidateInfo?.phoneNumber || "N/A"}
+              </p>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div className="text-gray-500">Experience</div>
+                  <div className="text-gray-900">{(currentCandidateDetails?.candidateInfo?.totalExperience && currentCandidateDetails?.candidateInfo?.totalExperience !== "-") ? `${currentCandidateDetails?.candidateInfo?.totalExperience} Years` : "N/A"}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Expected Salary</div>
+                  <div className="text-gray-900">{currentCandidateDetails?.candidateInfo?.currentSalary ? `MYR ${currentCandidateDetails?.candidateInfo?.currentSalary}` : "N/A"}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Notice Period</div>
+                  <div className="text-gray-900">{currentCandidateDetails?.candidateInfo?.noticePeriod ? `${currentCandidateDetails?.candidateInfo?.noticePeriod} Days` : "N/A"}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Location</div>
+                  <div className="text-gray-900">{currentCandidateDetails?.candidateInfo?.preferedJobLocation || "N/A"}</div>
+                </div>
+                <div className="sm:col-span-2">
+                  <div className="text-gray-500">Education</div>
+                  <div className="text-gray-900">
+                    {currentCandidateDetails?.candidateInfo?.college || "N/A"}
+                    {currentCandidateDetails?.candidateInfo?.graduatedYear ? ` (Class of ${currentCandidateDetails?.candidateInfo?.graduatedYear})` : ""}
                   </div>
-                ))}
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              onClick={handlePreviewResume}
-              className=" flex h-11 items-center justify-center px-5"
-            >
-              Resume
-            </Button>
-            <Button
-              onClick={() => handleUpdateJobStatus("selected")}
-              className=" disabled:opacity-65 flex h-11 items-center justify-center px-5"
-              disabled={
-                jobApplications
-                  .find(
-                    (item) =>
-                      item.candidateUserID === currentCandidateDetails?.userId
-                  )
-                  ?.status.includes("selected") ||
-                jobApplications
-                  .find(
-                    (item) =>
-                      item.candidateUserID === currentCandidateDetails?.userId
-                  )
-                  ?.status.includes("rejected")
-                  ? true
-                  : false
-              }
-            >
-              {jobApplications
-                .find(
-                  (item) =>
-                    item.candidateUserID === currentCandidateDetails?.userId
-                )
-                ?.status.includes("selected")
-                ? "Selected"
-                : "Select"}
-            </Button>
-            <Button
-              onClick={() => handleUpdateJobStatus("rejected")}
-              className=" disabled:opacity-65 flex h-11 items-center justify-center px-5"
-              disabled={
-                jobApplications
-                  .find(
-                    (item) =>
-                      item.candidateUserID === currentCandidateDetails?.userId
-                  )
-                  ?.status.includes("selected") ||
-                jobApplications
-                  .find(
-                    (item) =>
-                      item.candidateUserID === currentCandidateDetails?.userId
-                  )
-                  ?.status.includes("rejected")
-                  ? true
-                  : false
-              }
-            >
-              {jobApplications
-                .find(
-                  (item) =>
-                    item.candidateUserID === currentCandidateDetails?.userId
-                )
-                ?.status.includes("rejected")
-                ? "Rejected"
-                : "Reject"}
-            </Button>
-          </div>
+                </div>
+                <div>
+                  <div className="text-gray-500">LinkedIn</div>
+                  <div className="text-gray-900">
+                    {currentCandidateDetails?.candidateInfo?.linkedinProfile ? (
+                      <a href={currentCandidateDetails?.candidateInfo?.linkedinProfile} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View</a>
+                    ) : ("N/A")}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-500">GitHub</div>
+                  <div className="text-gray-900">
+                    {currentCandidateDetails?.candidateInfo?.githubProfile ? (
+                      <a href={currentCandidateDetails?.candidateInfo?.githubProfile} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View</a>
+                    ) : ("N/A")}
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <div className="text-gray-500 mb-2">Skills</div>
+                  <div className="flex flex-wrap gap-2">
+                    {(() => {
+                      const skills = (currentCandidateDetails?.candidateInfo?.skills || "")
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      if (skills.length === 0) return (<span className="text-gray-900">N/A</span>);
+                      return skills.map((skill, idx) => (
+                        <span key={idx} className="px-2 py-1 rounded-full border text-xs bg-gray-50 text-gray-800">
+                          {skill}
+                        </span>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </DialogContent>
       </Dialog>
     </Fragment>

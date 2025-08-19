@@ -48,7 +48,14 @@ function JobListing({
   }
 
   useEffect(() => {
-    setFilterParams(JSON.parse(sessionStorage.getItem("filterParams")));
+    try {
+      const raw = sessionStorage.getItem("filterParams");
+      if (!raw) return; // keep default {}
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") setFilterParams(parsed);
+    } catch (e) {
+      console.warn("Failed to parse filterParams from sessionStorage:", e);
+    }
   }, []);
 
   useEffect(() => {

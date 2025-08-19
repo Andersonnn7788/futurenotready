@@ -75,27 +75,33 @@ function Membership({ profileInfo }) {
   }
 
   async function updateProfile() {
-    const fetchCurrentPlanFromSessionStroage = JSON.parse(
-      sessionStorage.getItem("currentPlan")
-    );
+    let fetchCurrentPlanFromSessionStroage = null;
+    try {
+      const raw = sessionStorage.getItem("currentPlan");
+      fetchCurrentPlanFromSessionStroage = raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      console.warn("Failed to parse currentPlan from sessionStorage:", e);
+    }
+
+    const yearsToAdd = (() => {
+      const type = fetchCurrentPlanFromSessionStroage?.type;
+      const plan = fetchCurrentPlanFromSessionStroage?.plan;
+      if (type === "basic") return 1;
+      if (plan === "teams") return 2;
+      return 5; // enterprise or default
+    })();
+
+    const start = new Date();
+    const end = new Date(start);
+    end.setFullYear(start.getFullYear() + yearsToAdd);
 
     await updateProfileAction(
       {
         ...profileInfo,
         isPremiumUser: true,
         memberShipType: fetchCurrentPlanFromSessionStroage?.type,
-        memberShipStartDate: new Date().toString(),
-        memberShipEndDate: new Date(
-          new Date().getFullYear() +
-            fetchCurrentPlanFromSessionStroage?.type ===
-          "basic"
-            ? 1
-            : fetchCurrentPlanFromSessionStroage?.plan === "teams"
-            ? 2
-            : 5,
-          new Date().getMonth(),
-          new Date().getDay()
-        ),
+  memberShipStartDate: start.toString(),
+  memberShipEndDate: end.toString(),
       },
       "/membership"
     );
