@@ -10,8 +10,8 @@ import {
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseClient = createClient(
-  "https://ymsijpnegskkoiuerthi.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inltc2lqcG5lZ3Nra29pdWVydGhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTQyMzYzNDYsImV4cCI6MjAyOTgxMjM0Nn0.PM7Nr9qTZFEJsf62eHgkFXKGPqt0gfMdFN6SOJjCP6M"
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ymsijpnegskkoiuerthi.supabase.co",
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inltc2lqcG5lZ3Nra29pdWVydGhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTQyMzYzNDYsImV4cCI6MjAyOTgxMjM0Nn0.PM7Nr9qTZFEJsf62eHgkFXKGPqt0gfMdFN6SOJjCP6M"
 );
 
 function CandidateList({
@@ -34,7 +34,7 @@ function CandidateList({
 
   function handlePreviewResume() {
     const { data } = supabaseClient.storage
-      .from("job-board-public")
+      .from(process.env.NEXT_PUBLIC_SUPABASE_BUCKET || "job-board-public")
       .getPublicUrl(currentCandidateDetails?.candidateInfo?.resume);
 
     const a = document.createElement("a");
