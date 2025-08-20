@@ -139,14 +139,7 @@ export default function AnalyzeClient({ candidateProfile }) {
                 <div className="font-semibold">AI Fit Analysis</div>
                 <div className="text-sm whitespace-pre-wrap">{result?.analysis || ""}</div>
               </div>
-              {result.debugInfo && (
-                <details className="text-sm">
-                  <summary className="cursor-pointer text-gray-600">🔍 Technical Details</summary>
-                  <pre className="text-xs bg-gray-50 p-3 mt-2 rounded overflow-auto">
-                    {JSON.stringify(result.debugInfo, null, 2)}
-                  </pre>
-                </details>
-              )}
+              {/* Technical Details removed as requested */}
             </div>
           )}
           <div className="mt-4 flex gap-2">
