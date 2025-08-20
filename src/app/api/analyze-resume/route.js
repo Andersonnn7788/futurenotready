@@ -237,13 +237,58 @@ async function callOpenAI({ extractedText, role }) {
     ? text.slice(0, 15000)
     : "[No text could be extracted from the PDF. It may be image-based or encrypted. Provide general guidance on what information is missing and how the candidate could improve the resume for the role.]";
 
-  const prompt = `You are a resume screening assistant.\n\nResume (plain text, if provided below):\n"""\n${body}\n"""\n\nRole: ${role}\n\nIf a file is attached, read it as the resume content.\n\nTasks:\n1) Summarize the candidate in 3-5 bullets (or explain if text was unavailable).\n2) List 3-5 strengths relevant to the role (or note insufficient data).\n3) List 3-5 gaps/risks (or note insufficient data).\n4) Provide an overall verdict in one short paragraph. When presenting your analysis, format the response with headings, bold text, and italics where appropriate, but do not show any markdown symbols (no **, ###, *, etc.). The output should look like styled plain text, not markdown code.`;
+  const prompt = `You are a resume screening assistant.
+
+Resume (plain text, if provided below):
+"""
+${body}
+"""
+
+Role: ${role}
+
+If a file is attached, read it as the resume content.
+
+Tasks:
+
+Summarize the candidate in 3–5 bullets (or explain if text was unavailable).
+
+List 3–5 strengths relevant to the role (or note insufficient data).
+
+List 3–5 gaps/risks (or note insufficient data).
+
+Provide an overall verdict in one short paragraph.
+
+Add a Score Matching section where you rate how well the candidate fits the role on a scale of 1–10, with short justification.
+
+Add a Retention section where you assess the likelihood of the candidate staying long-term (High risk, Moderate risk, or Low risk), with reasoning.
+
+Output Formatting Requirements:
+
+Present each category inside a visually distinct box-like section with a clear title.
+
+Titles should be styled (e.g., bold or heading style) without showing raw markdown symbols like ** or ###.
+
+Each box should clearly separate content for readability, as if displayed in a UI card or container.
+
+The final output should contain the following boxes in order:
+
+Candidate Summary
+
+Strengths
+
+Gaps/Risks
+
+Overall Verdict
+
+Score Matching
+
+Retention`;
 
   const payload = {
     model: "gpt-4o-mini",
     temperature: 0.2,
     messages: [
-      { role: "system", content: "You extract resume text and analyze candidate fit." },
+      { role: "system", content: "You are a resume screening assistant. Format your response with clear section titles and structured content, but do not use markdown symbols. Present each section as if it's in a styled UI container with bold headings." },
       { role: "user", content: prompt },
     ],
   };
