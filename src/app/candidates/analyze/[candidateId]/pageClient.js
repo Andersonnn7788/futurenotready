@@ -5,6 +5,80 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter, useSearchParams } from "next/navigation";
 
+// Component to parse and display analysis in structured boxes
+function AnalysisBoxes({ analysis }) {
+  const sections = [
+    { title: "Candidate Summary", key: "candidate-summary", icon: "👤" },
+    { title: "Strengths", key: "strengths", icon: "✅" },
+    { title: "Gaps/Risks", key: "gaps-risks", icon: "⚠️" },
+    { title: "Overall Verdict", key: "overall-verdict", icon: "📝" },
+    { title: "Score Matching", key: "score-matching", icon: "📊" },
+    { title: "Retention", key: "retention", icon: "🔒" }
+  ];
+
+  // Simple parser to extract sections from AI response
+  function parseAnalysis(text) {
+    const parsed = {};
+    
+    sections.forEach(section => {
+      // Look for section title (case insensitive, flexible matching)
+      const titleVariations = [
+        section.title,
+        section.title.replace(/[\/\-\s]/g, '').toLowerCase(),
+        section.title.toLowerCase(),
+        section.title.replace('/', ' / '),
+        section.title.replace('-', ' - ')
+      ];
+      
+      let sectionContent = '';
+      
+      for (const titleVar of titleVariations) {
+        const regex = new RegExp(`${titleVar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[:\\s]*([\\s\\S]*?)(?=(?:${sections.map(s => s.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})|$)`, 'i');
+        const match = text.match(regex);
+        
+        if (match && match[1]) {
+          sectionContent = match[1].trim();
+          break;
+        }
+      }
+      
+      // Fallback: if no structured sections found, put everything in summary
+      if (!sectionContent && section.key === 'candidate-summary' && !parsed[section.key]) {
+        sectionContent = text.substring(0, 300) + (text.length > 300 ? '...' : '');
+      }
+      
+      parsed[section.key] = sectionContent;
+    });
+    
+    return parsed;
+  }
+
+  const parsedAnalysis = parseAnalysis(analysis);
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {sections.map((section) => (
+        <div
+          key={section.key}
+          className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">{section.icon}</span>
+            <h3 className="font-semibold text-blue-900 text-sm">{section.title}</h3>
+          </div>
+          <div className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">
+            {parsedAnalysis[section.key] || (
+              <span className="text-gray-500 italic">
+                No {section.title.toLowerCase()} information available
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function AnalyzeClient({ candidateProfile }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -136,8 +210,12 @@ export default function AnalyzeClient({ candidateProfile }) {
                 </pre>
               </div>
               <div>
-                <div className="font-semibold">AI Fit Analysis</div>
-                <div className="text-sm whitespace-pre-wrap">{result?.analysis || ""}</div>
+                <div className="font-semibold mb-4">AI Fit Analysis</div>
+                {result?.analysis ? (
+                  <AnalysisBoxes analysis={result.analysis} />
+                ) : (
+                  <div className="text-sm text-gray-500">No analysis available</div>
+                )}
               </div>
               {/* Technical Details removed as requested */}
             </div>
