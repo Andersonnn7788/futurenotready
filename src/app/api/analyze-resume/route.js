@@ -237,7 +237,7 @@ async function callOpenAI({ extractedText, role }) {
     ? text.slice(0, 15000)
     : "[No text could be extracted from the PDF. It may be image-based or encrypted. Provide general guidance on what information is missing and how the candidate could improve the resume for the role.]";
 
-  const prompt = `You are a resume screening assistant.\n\nResume (plain text, if provided below):\n"""\n${body}\n"""\n\nRole: ${role}\n\nIf a file is attached, read it as the resume content.\n\nTasks:\n1) Summarize the candidate in 3-5 bullets (or explain if text was unavailable).\n2) List 3-5 strengths relevant to the role (or note insufficient data).\n3) List 3-5 gaps/risks (or note insufficient data).\n4) Provide an overall verdict in one short paragraph.`;
+  const prompt = `You are a resume screening assistant.\n\nResume (plain text, if provided below):\n"""\n${body}\n"""\n\nRole: ${role}\n\nIf a file is attached, read it as the resume content.\n\nTasks:\n1) Summarize the candidate in 3-5 bullets (or explain if text was unavailable).\n2) List 3-5 strengths relevant to the role (or note insufficient data).\n3) List 3-5 gaps/risks (or note insufficient data).\n4) Provide an overall verdict in one short paragraph. When presenting your analysis, format the response with headings, bold text, and italics where appropriate, but do not show any markdown symbols (no **, ###, *, etc.). The output should look like styled plain text, not markdown code.`;
 
   const payload = {
     model: "gpt-4o-mini",
